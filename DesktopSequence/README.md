@@ -1,0 +1,6 @@
+# Desktop-Sequence-With-AI
+Sequence is a board game where players, 2-12 (recommended 4), are presented with a board of cards, minus jacks and double of each card with free spaces in each corner. if more than 2 players, you will be in teams. For this game I am only doing it to play against an AI. Each person will be delt 5 cards and will take turns placing chips corresponding to the card used. Then they wil pick up a new one. There are 2 special cards, one-eyed Jack and two-eyed Jack. The one-eyed Jack means you can pick up any chip from the oposing team or player. The two-eyed Jack means you can place your chip anywhere on the board. The free space only applies when a team or player gets 4 chip in a row before the space. To get points you have to have 5 chips in a row, once the "sequence" is made it cannot be touched. Players with cards that do not have space on the board can discard the card and still take a turn, or discard and use that as thier turn. 
+
+I have played this game every night with my family any time we get together and enjoy it everytime. Creating this game allows me to keep playing on the go on my computer. This is a first of many other desktop games I want to make and the start of my end goal to make a widget based game manager.
+
+## IF IM MISSING ANYTHING I WILL UPDATE LATER ##
