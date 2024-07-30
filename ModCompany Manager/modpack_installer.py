@@ -1,14 +1,46 @@
-import sys
 import os
 import shutil
+import sys
+import zipfile
+import requests
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QMessageBox, QHBoxLayout, QFrame, QSpacerItem, QSizePolicy
 from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtGui import QMouseEvent, QIcon
 
+# Google Drive file IDs for ZIP files
+BEPINEX_ZIP_ID = '1uaFe7VEqf0uKGmALyBHO_Ay_Kx4qGey8'
+MODS_ZIP_ID = '1qf_egaOp5JJysxwQC5yHQWb0R58zIjX7'
+
+# Function to get the absolute path to a resource, works for both development and PyInstaller
 def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
+
+# Authenticate and initialize Google Drive API
+def authenticate_google_drive():
+    creds_path = resource_path('credentials.json')
+    creds = service_account.Credentials.from_service_account_file(creds_path, scopes=['https://www.googleapis.com/auth/drive'])
+    service = build('drive', 'v3', credentials=creds)
+    return service
+
+def download_file(service, file_id, dest_path):
+    request = service.files().get_media(fileId=file_id)
+    with open(dest_path, 'wb') as f:
+        downloader = MediaIoBaseDownload(f, request)
+        done = False
+        while not done:
+            status, done = downloader.next_chunk()
+            print(f"Download {file_id}: {int(status.progress() * 100)}%")
+
+def download_and_extract_zip(service, file_id, dest_dir):
+    zip_path = os.path.join(dest_dir, 'temp.zip')
+    download_file(service, file_id, zip_path)
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall(dest_dir)
+    os.remove(zip_path)
 
 class CustomTitleBar(QFrame):
     def __init__(self, parent):
@@ -24,11 +56,23 @@ class CustomTitleBar(QFrame):
                 color: #f0f0f0;
                 border-bottom: 1px solid #5e5e5e;
             }
+            QLabel {
+                padding-left: 5px;
+            }
+            QPushButton {
+                background-color: #2e2e2e;
+                color: #f0f0f0;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: #5e5e5e;
+            }
         """)
 
         self.setFixedHeight(30)
         layout = QHBoxLayout()
-        layout.setContentsMargins(5, 0, 0, 0)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
         self.title = QLabel(self.parent.windowTitle(), self)
         layout.addWidget(self.title)
@@ -58,12 +102,13 @@ class ModpackInstaller(QWidget):
     def __init__(self):
         super().__init__()
         self.dragPos = QPoint()
+        self.service = authenticate_google_drive()
         self.initUI()
 
     def initUI(self):
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.setWindowTitle('Modpack Installer')
-        self.setGeometry(100, 100, 400, 500)
+        self.setGeometry(100, 100, 500, 600)
 
         # Set the window icon
         icon_path = resource_path('app_icon.ico')
@@ -71,11 +116,14 @@ class ModpackInstaller(QWidget):
 
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
         self.titleBar = CustomTitleBar(self)
         layout.addWidget(self.titleBar)
 
         contentLayout = QVBoxLayout()
+        contentLayout.setContentsMargins(20, 20, 20, 20)
+        contentLayout.setSpacing(10)
 
         # Step 1
         self.step1_label = QLabel('Step 1: Select the game directory', self)
@@ -120,6 +168,14 @@ class ModpackInstaller(QWidget):
         layout.addLayout(contentLayout)
         self.setLayout(layout)
 
+        # Load dark mode stylesheet
+        self.load_stylesheet()
+
+    def load_stylesheet(self):
+        qss_path = resource_path('dark_mode.qss')
+        with open(qss_path, 'r') as f:
+            self.setStyleSheet(f.read())
+
     def select_game_directory(self):
         game_dir = QFileDialog.getExistingDirectory(self, 'Select Game Directory')
         self.game_dir_input.setText(game_dir)
@@ -136,24 +192,9 @@ class ModpackInstaller(QWidget):
             QMessageBox.information(self, 'BepInEx Installed', 'BepInEx is already installed. You don\'t need to reinstall it.')
             return
 
-        bepinex_src = resource_path("bepinex_files")  # Path to bepinex_files directory
-        if not os.path.exists(bepinex_src):
-            QMessageBox.critical(self, 'Error', f'BepInEx source directory does not exist: {bepinex_src}')
-            return
-
-        # List of files and directories to copy
-        items_to_copy = ["BepInEx", "doorstop_config.ini", "winhttp.dll"]
-
+        # Download and extract BepInEx files
         try:
-            for item in items_to_copy:
-                src_path = os.path.join(bepinex_src, item)
-                dest_path = os.path.join(game_dir, item)
-                if os.path.isdir(src_path):
-                    if os.path.exists(dest_path):
-                        shutil.rmtree(dest_path)
-                    shutil.copytree(src_path, dest_path)
-                else:
-                    shutil.copy2(src_path, dest_path)
+            download_and_extract_zip(self.service, BEPINEX_ZIP_ID, game_dir)
             QMessageBox.information(self, 'Success', 'BepInEx installed successfully. Now run the game to the main menu and then close it.')
         except Exception as e:
             QMessageBox.critical(self, 'Error', f'Failed to install BepInEx: {e}')
@@ -165,33 +206,17 @@ class ModpackInstaller(QWidget):
             return
 
         # Specific folders to copy into the BepInEx directory
-        mods_dir = resource_path("mods_files")
-        if not os.path.exists(mods_dir):
-            QMessageBox.critical(self, 'Error', f'Mods source directory does not exist: {mods_dir}')
-            return
-
         bepinex_dir = os.path.join(game_dir, "BepInEx")
         if not os.path.exists(bepinex_dir):
             QMessageBox.critical(self, 'Error', f'BepInEx directory does not exist in the game directory: {bepinex_dir}')
             return
 
-        folders_to_copy = ["config", "Custom Songs", "patchers", "plugins"]
-        for folder in folders_to_copy:
-            src = os.path.join(mods_dir, folder)
-            dest = os.path.join(bepinex_dir, folder)
-            if not os.path.exists(src):
-                QMessageBox.critical(self, 'Error', f'Source folder does not exist: {src}')
-                return
-            try:
-                if os.path.exists(dest):
-                    shutil.rmtree(dest)  # Remove existing directory
-                shutil.copytree(src, dest)  # Copy entire directory
-                print(f"Installed {folder} to {dest}")
-            except Exception as e:
-                QMessageBox.critical(self, 'Error', f'Failed to install {folder}: {e}')
-                return
-
-        QMessageBox.information(self, 'Success', 'Modpack installed successfully. Don\'t complain to Pux when it doesn\'t work (complain to Nicholas).')
+        # Download and extract mod files
+        try:
+            download_and_extract_zip(self.service, MODS_ZIP_ID, bepinex_dir)
+            QMessageBox.information(self, 'Success', 'Modpack installed successfully. Don\'t complain to Pux when it doesn\'t work (complain to Nicholas).')
+        except Exception as e:
+            QMessageBox.critical(self, 'Error', f'Failed to install mods: {e}')
 
     def uninstall_mods(self):
         game_dir = self.game_dir_input.text()
@@ -226,12 +251,6 @@ class ModpackInstaller(QWidget):
 
 def main():
     app = QApplication(sys.argv)
-
-    # Load the dark mode stylesheet
-    stylesheet_path = resource_path("dark_mode.qss")
-    with open(stylesheet_path, "r") as file:
-        app.setStyleSheet(file.read())
-
     ex = ModpackInstaller()
     ex.show()
     sys.exit(app.exec_())
