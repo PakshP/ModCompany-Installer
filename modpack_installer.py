@@ -10,9 +10,10 @@ from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QLineEdi
 from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtGui import QMouseEvent, QIcon
 
-# Google Drive file IDs for ZIP files
-BEPINEX_ZIP_ID = '1uaFe7VEqf0uKGmALyBHO_Ay_Kx4qGey8'
-MODS_ZIP_ID = '1qf_egaOp5JJysxwQC5yHQWb0R58zIjX7'
+# Google Drive file IDs for ZIP files 
+# Replace # with actual zip id
+BEPINEX_ZIP_ID = '################################'
+MODS_ZIP_ID = '################################'
 
 # Function to get the absolute path to a resource, works for both development and PyInstaller
 def resource_path(relative_path):
