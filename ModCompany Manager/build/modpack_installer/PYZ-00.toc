@@ -1,4 +1,4 @@
-('F:\\Desktop\\JustSomeGames\\ModCompany '
+('F:\\Desktop\\JustSomeGames\\just-some-games\\ModCompany '
  'Manager\\build\\modpack_installer\\PYZ-00.pyz',
  [('PyQt5',
    'C:\\Users\\paksh\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyQt5\\__init__.py',
