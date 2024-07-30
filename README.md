@@ -10,6 +10,8 @@ Also not included is the credentials.json becuase duh, you can't have my keys!
 
 The mod files and bepin files are here but the program uses GoogleDriveAPI to get them from the cloud.
 
+The music for the Boombox Mod is also not in here, put your own if you want.
+
 ### Author
 
 Paksh Patel
