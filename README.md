@@ -12,6 +12,13 @@ The mod files and bepin files are here but the program uses GoogleDriveAPI to ge
 
 The music for the Boombox Mod is also not in here, put your own if you want.
 
+## Instructions to repackage with differenet mods
+1. In the main python code there are two lines that consist of the fileID of both zips in Google Drive. You would need to change those to whatever your fileID is.
+2. You would also need a credentials.json from the GoogleDriveAPI
+3. Using pyinstaller, you would need to run this command: 
+pyinstaller --onefile --windowed --icon=app_icon.ico --add-data "dark_mode.qss;." --add-data "credentials.json;." modpack_installer.py
+4. this will output a dist folder that has the exe installer.
+
 ### Author
 
 Paksh Patel
